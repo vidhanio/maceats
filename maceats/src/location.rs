@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::{
     borrow::ToOwned,
     collections::{BTreeMap, BTreeSet},
@@ -11,7 +14,7 @@ use scraper::{ElementRef, Html};
 use selectors::attr::CaseSensitivity;
 use serde::{Deserialize, Serialize};
 
-use crate::{selector, Error, FoodType, Result, CLIENT};
+use crate::{regex, selector, Error, FoodType, Result, CLIENT};
 
 /// A location where [`Restaurant`]s are located.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -67,6 +70,15 @@ impl Location {
             .error_for_status()?;
         let html = Html::parse_document(&response.text().await?);
 
+        Self::all_from_html(&html)
+    }
+
+    /// Get every location from the given html.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the request fails.
+    pub fn all_from_html(html: &Html) -> Result<Vec<Self>> {
         html.select(selector!("div.unit.unit-location"))
             .map(TryInto::try_into)
             .collect()
@@ -81,6 +93,15 @@ impl Location {
         let response = CLIENT.get(self.url.clone()).send().await?;
         let html = Html::parse_document(&response.text().await?);
 
+        Self::restaurants_from_html(&html)
+    }
+
+    /// Get the [`Restaurant`]s at the [`Location`] from the given html.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if parsing the html fails.
+    pub fn restaurants_from_html(html: &Html) -> Result<Vec<Restaurant>> {
         html.select(selector!("div.unit"))
             .map(TryInto::try_into)
             .collect()
@@ -107,14 +128,17 @@ impl TryFrom<ElementRef<'_>> for Location {
         let name = element
             .text()
             .next()
-            .ok_or(Error::ParseElement("location"))?;
+            .ok_or(Error::ParseElement("location"))?
+            .trim();
 
-        let url = element
-            .value()
-            .attr("href")
-            .ok_or(Error::ParseElement("location"))?;
+        let url = "https://maceats.mcmaster.ca".parse::<Url>()?.join(
+            element
+                .value()
+                .attr("href")
+                .ok_or(Error::ParseElement("location"))?,
+        )?;
 
-        Ok(Self::new_with_url(name, &url.parse()?))
+        Ok(Self::new_with_url(name, &url))
     }
 }
 
@@ -153,6 +177,7 @@ impl TryFrom<ElementRef<'_>> for Restaurant {
                     .text()
                     .next()
                     .ok_or(Error::ParseElement($name))?
+                    .trim()
             };
         }
 
@@ -161,7 +186,13 @@ impl TryFrom<ElementRef<'_>> for Restaurant {
                 element_ref
                     .select(selector!($selector))
                     .next()
-                    .map(|element_ref| element_ref.text().next().ok_or(Error::ParseElement($name)))
+                    .map(|element_ref| {
+                        element_ref
+                            .text()
+                            .next()
+                            .ok_or(Error::ParseElement($name))
+                            .map(|s| s.trim())
+                    })
                     .transpose()?
             };
         }
@@ -214,19 +245,10 @@ impl TryFrom<ElementRef<'_>> for Restaurant {
 }
 
 /// The times a [`Restaurant`] is open on a given day.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Times {
-    /// The restaurant is open from [`start`] to [`end`].
-    ///
-    /// [`start`]: Times::Open.start
-    /// [`end`]: Times::Open.end
-    Open {
-        /// The time the restaurant opens.
-        start: NaiveTime,
-
-        /// The time the restaurant closes.
-        end: NaiveTime,
-    },
+    /// Time ranges the restaurant is open.
+    Open(Vec<Open>),
 
     /// The restaurant is closed.
     Closed,
@@ -239,14 +261,9 @@ impl FromStr for Times {
         if s == "Closed" {
             Ok(Self::Closed)
         } else {
-            let (start, end) = s.split_once(" - ").ok_or(Error::ParseElement("time"))?;
-
-            let start = NaiveTime::parse_from_str(start, "%l %P")
-                .or_else(|_| NaiveTime::parse_from_str(start, "%l:%M %P"))?;
-            let end = NaiveTime::parse_from_str(end, "%l %P")
-                .or_else(|_| NaiveTime::parse_from_str(end, "%l:%M %P"))?;
-
-            Ok(Self::Open { start, end })
+            Ok(Self::Open(
+                s.split(", ").map(str::parse).collect::<Result<_>>()?,
+            ))
         }
     }
 }
@@ -260,20 +277,37 @@ impl TryFrom<ElementRef<'_>> for Times {
             .has_class("time", CaseSensitivity::CaseSensitive));
         debug_assert_eq!(element.value().name(), "td");
 
-        let text = element.text().next().ok_or(Error::ParseElement("time"))?;
+        let text = element
+            .text()
+            .next()
+            .ok_or(Error::ParseElement("time"))?
+            .trim();
 
         text.parse()
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// The times a [`Restaurant`] is open on a given day.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct Open {
+    pub from: NaiveTime,
+    pub to: NaiveTime,
+}
 
-    #[tokio::test]
-    async fn restaurants_parse() {
-        let location = Location::new("Alumni Memorial Hall");
+impl FromStr for Open {
+    type Err = Error;
 
-        location.restaurants().await.unwrap();
+    fn from_str(s: &str) -> Result<Self> {
+        let (from_s, to_s) = s.split_once(" - ").ok_or(Error::ParseElement("time"))?;
+
+        let re = regex!(r"^(?P<hour>\d{1,2}) (?P<am_pm>am|pm)$");
+
+        let from_s = re.replace_all(from_s, "$hour:00 $am_pm");
+        let to_s = re.replace_all(to_s, "$hour:00 $am_pm");
+
+        let from = NaiveTime::parse_from_str(&from_s, "%l:%M %P")?;
+        let to = NaiveTime::parse_from_str(&to_s, "%l:%M %P")?;
+
+        Ok(Self { from, to })
     }
 }

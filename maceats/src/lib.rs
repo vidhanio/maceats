@@ -38,4 +38,13 @@ macro_rules! selector {
 }
 pub(crate) use selector;
 
+macro_rules! regex {
+    ($regex:literal $(,)?) => {{
+        static REGEX: ::once_cell::sync::OnceCell<::regex::Regex> =
+            ::once_cell::sync::OnceCell::new();
+        REGEX.get_or_init(|| ::regex::Regex::new($regex).expect("static regex should be valid"))
+    }};
+}
+pub(crate) use regex;
+
 pub(crate) static CLIENT: Lazy<Client> = Lazy::new(Client::new);
