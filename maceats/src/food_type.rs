@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use crate::{Error, Result};
 
 /// The type of food served at a [`Restaurant`].
+///
+/// [`Restaurant`]: crate::Restaurant
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FoodType {
@@ -100,6 +102,8 @@ impl TryFrom<ElementRef<'_>> for FoodType {
 }
 
 /// A brand of coffee served at a [`Restaurant`].
+///
+/// [`Restaurant`]: crate::Restaurant
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum CoffeeBrand {

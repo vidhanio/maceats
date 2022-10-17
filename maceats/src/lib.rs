@@ -19,13 +19,15 @@
 mod error;
 mod food_type;
 mod location;
+mod times;
 
 use once_cell::sync::Lazy;
 use reqwest::Client;
 
 pub use error::{Error, Result};
 pub use food_type::{CoffeeBrand, FoodType};
-pub use location::{Location, Restaurant, Times};
+pub use location::{Location, Restaurant};
+pub use times::{Open, Times};
 
 macro_rules! selector {
     ($selector:literal $(,)?) => {{
