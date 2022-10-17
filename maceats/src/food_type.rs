@@ -1,9 +1,11 @@
 use std::str::FromStr;
 
-use scraper::ElementRef;
+use futures::{stream, StreamExt, TryStreamExt};
+use reqwest::Url;
+use scraper::{ElementRef, Html};
 use serde::{Deserialize, Serialize};
 
-use crate::{Error, Result};
+use crate::{Error, Restaurant, Result, CLIENT};
 
 /// The type of food served at a [`Restaurant`].
 ///
@@ -58,6 +60,61 @@ pub enum FoodType {
 
     /// Vegetarian food.
     Vegetarian,
+}
+
+impl FoodType {
+    /// Get the urls for this [`FoodType`].
+    #[must_use]
+    pub fn urls(&self) -> Vec<Url> {
+        fn url(url: &str) -> Vec<Url> {
+            vec![url.parse::<Url>().expect("static url should be valid")]
+        }
+
+        match self {
+            Self::Breakfast => url("https://maceats.mcmaster.ca/types/breakfast"),
+            Self::Coffee(Some(brand)) => vec![brand.url()],
+            Self::Coffee(None) => vec![
+                CoffeeBrand::Marley.url(),
+                CoffeeBrand::Rejuvenate.url(),
+                CoffeeBrand::Starbucks.url(),
+                CoffeeBrand::TimHortons.url(),
+                CoffeeBrand::Williams.url(),
+            ],
+            Self::Convenience => url("https://maceats.mcmaster.ca/types/convenience"),
+            Self::Dessert => url("https://maceats.mcmaster.ca/types/dessert"),
+            Self::GlutenFree => url("https://maceats.mcmaster.ca/types/gluten-free"),
+            Self::Grill => url("https://maceats.mcmaster.ca/types/grill"),
+            Self::Halal => url("https://maceats.mcmaster.ca/types/halal"),
+            Self::Kosher => url("https://maceats.mcmaster.ca/types/kosher"),
+            Self::Noodles => url("https://maceats.mcmaster.ca/types/noodles"),
+            Self::Pasta => url("https://maceats.mcmaster.ca/types/pasta"),
+            Self::Pizza => url("https://maceats.mcmaster.ca/types/pizza"),
+            Self::Sandwiches => url("https://maceats.mcmaster.ca/types/sandwiches"),
+            Self::Snacks => url("https://maceats.mcmaster.ca/types/snacks"),
+            Self::Soup => url("https://maceats.mcmaster.ca/types/soup"),
+            Self::Sushi => url("https://maceats.mcmaster.ca/types/sushi"),
+            Self::Vegetarian => url("https://maceats.mcmaster.ca/types/vegetarian"),
+        }
+    }
+
+    /// Get the [`Restaurant`]s that serve this food type.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if sending the request or parsing the response fails.a
+    ///
+    /// [`Restaurant`]: crate::Restaurant
+    pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
+        stream::iter(self.urls())
+            .then(|url| async move {
+                Restaurant::from_restaurant_page_url(&url)
+                    .await
+                    .map(|v| stream::iter(v.into_iter().map(Ok)))
+            })
+            .try_flatten()
+            .try_collect::<Vec<_>>()
+            .await
+    }
 }
 
 impl FromStr for FoodType {
@@ -121,6 +178,36 @@ pub enum CoffeeBrand {
 
     /// Williams.
     Williams,
+}
+
+impl CoffeeBrand {
+    /// Get the url for this [`CoffeeBrand`].
+    #[must_use]
+    pub fn url(&self) -> Url {
+        match self {
+            Self::Marley => "https://maceats.mcmaster.ca/types/coffee/marley",
+            Self::Rejuvenate => "https://maceats.mcmaster.ca/types/coffee/rejuvenate",
+            Self::Starbucks => "https://maceats.mcmaster.ca/types/coffee/starbucks",
+            Self::TimHortons => "https://maceats.mcmaster.ca/types/coffee/tim-hortons",
+            Self::Williams => "https://maceats.mcmaster.ca/types/coffee/williams",
+        }
+        .parse()
+        .expect("static url should be valid")
+    }
+
+    /// Get the [`Restaurant`]s that serve this coffee brand.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if sending the request or parsing the response fails.a
+    ///
+    /// [`Restaurant`]: crate::Restaurant
+    pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
+        let response = CLIENT.get(self.url()).send().await?;
+        let html = Html::parse_document(&response.text().await?);
+
+        Restaurant::from_restaurant_page_html(&html)
+    }
 }
 
 impl FromStr for CoffeeBrand {

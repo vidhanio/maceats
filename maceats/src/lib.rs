@@ -21,12 +21,17 @@ mod food_type;
 mod location;
 mod times;
 
+mod restaurant;
+#[cfg(test)]
+mod tests;
+
 use once_cell::sync::Lazy;
 use reqwest::Client;
 
 pub use error::{Error, Result};
 pub use food_type::{CoffeeBrand, FoodType};
-pub use location::{Location, Restaurant};
+pub use location::Location;
+pub use restaurant::Restaurant;
 pub use times::{Open, Times};
 
 macro_rules! selector {
