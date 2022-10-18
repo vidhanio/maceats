@@ -6,7 +6,7 @@ use super::*;
 fn local_parse_restaurants() {
     let html = Html::parse_document(include_str!("tests/student-centre.html"));
 
-    let restaurants = Restaurant::from_restaurant_page_html(&html).unwrap();
+    let restaurants = Restaurant::from_restaurant_list_html(&html).unwrap();
 
     assert_eq!(restaurants.len(), 5);
 

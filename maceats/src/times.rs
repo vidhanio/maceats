@@ -1,4 +1,7 @@
-use std::str::FromStr;
+use std::{
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 
 use chrono::NaiveTime;
 use scraper::ElementRef;
@@ -11,12 +14,30 @@ use crate::{regex, Error, Result};
 ///
 /// [`Restaurant`]: crate::Restaurant
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Times {
     /// Time ranges the restaurant is open.
     Open(Vec<Open>),
 
     /// The restaurant is closed.
     Closed,
+}
+
+impl Display for Times {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Open(times) => times.iter().enumerate().for_each(|(i, time)| {
+                if i > 0 {
+                    write!(f, ", ").unwrap();
+                }
+
+                write!(f, "{}", time).unwrap();
+            }),
+            Self::Closed => write!(f, "Closed")?,
+        }
+
+        Ok(())
+    }
 }
 
 impl FromStr for Times {
@@ -62,6 +83,17 @@ pub struct Open {
 
     /// The time the restaurant closes.
     pub to: NaiveTime,
+}
+
+impl Display for Open {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} - {}",
+            self.from.format("%l:%M %P").to_string().trim(),
+            self.to.format("%l:%M %P").to_string().trim(),
+        )
+    }
 }
 
 impl FromStr for Open {

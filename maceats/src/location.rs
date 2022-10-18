@@ -1,4 +1,7 @@
-use std::borrow::ToOwned;
+use std::{
+    borrow::ToOwned,
+    fmt::{self, Display, Formatter},
+};
 
 use heck::ToKebabCase;
 use reqwest::Url;
@@ -11,8 +14,11 @@ use crate::{selector, Error, Restaurant, Result, CLIENT};
 /// A location where [`Restaurant`]s are located.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Location {
-    name: String,
-    url: Url,
+    /// The name of the location.
+    pub name: String,
+
+    /// The URL of the location.
+    pub url: Url,
 }
 
 impl Location {
@@ -28,49 +34,38 @@ impl Location {
         }
     }
 
-    /// Create a new [`Location`] with a custom url.
-    #[must_use]
-    pub fn new_with_url(name: &str, url: &Url) -> Self {
-        Self {
-            name: name.to_owned(),
-            url: url.clone(),
-        }
-    }
-
-    /// Get the url for this [`Location`].
-    #[must_use]
-    pub const fn url(&self) -> &Url {
-        &self.url
-    }
-
-    /// Get the name of the [`Location`].
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     /// Get every location on MacEats.
     ///
     /// # Errors
     ///
     /// This function will return an error if the request fails.
     pub async fn all() -> Result<Vec<Self>> {
-        let response = CLIENT
-            .get("https://maceats.mcmaster.ca/locations")
-            .send()
-            .await?
-            .error_for_status()?;
-        let html = Html::parse_document(&response.text().await?);
-
-        Self::from_html(&html)
+        Self::from_location_list_url(
+            &"https://maceats.mcmaster.ca/locations"
+                .parse()
+                .expect("static url should be valid"),
+        )
+        .await
     }
 
-    /// Get every location from the given html.
+    /// Parse a location list into a [`Vec<Location>`].
     ///
     /// # Errors
     ///
     /// This function will return an error if sending the request or parsing the response fails.
-    pub fn from_html(html: &Html) -> Result<Vec<Self>> {
+    pub async fn from_location_list_url(url: &Url) -> Result<Vec<Self>> {
+        let response = CLIENT.get(url.clone()).send().await?.error_for_status()?;
+        let html = Html::parse_document(&response.text().await?);
+
+        Self::from_location_list_html(&html)
+    }
+
+    /// Parse a location list [`Html`] document into a [`Vec<Location>`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if sending the request or parsing the response fails.
+    pub fn from_location_list_html(html: &Html) -> Result<Vec<Self>> {
         html.select(selector!("div.unit.unit-location"))
             .map(TryInto::try_into)
             .collect()
@@ -85,7 +80,13 @@ impl Location {
         let response = CLIENT.get(self.url.clone()).send().await?;
         let html = Html::parse_document(&response.text().await?);
 
-        Restaurant::from_restaurant_page_html(&html)
+        Restaurant::from_restaurant_list_html(&html)
+    }
+}
+
+impl Display for Location {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 
@@ -110,7 +111,8 @@ impl TryFrom<ElementRef<'_>> for Location {
             .text()
             .next()
             .ok_or(Error::ParseElement("location"))?
-            .trim();
+            .trim()
+            .to_owned();
 
         let url = "https://maceats.mcmaster.ca".parse::<Url>()?.join(
             element
@@ -119,6 +121,6 @@ impl TryFrom<ElementRef<'_>> for Location {
                 .ok_or(Error::ParseElement("location"))?,
         )?;
 
-        Ok(Self::new_with_url(name, &url))
+        Ok(Self { name, url })
     }
 }

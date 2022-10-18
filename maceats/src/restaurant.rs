@@ -1,6 +1,10 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::{self, write, Display, Formatter},
+};
 
 use chrono::{Duration, Local, NaiveDate};
+use futures::{stream, StreamExt, TryStreamExt};
 use reqwest::Url;
 use scraper::{ElementRef, Html};
 use serde::{Deserialize, Serialize};
@@ -30,29 +34,53 @@ pub struct Restaurant {
 }
 
 impl Restaurant {
-    /// Parse a restaurant page into a [`Vec<Restaurant>`].
+    /// Get every restaurant on MacEats.
     ///
     /// # Errors
     ///
     /// This function will return an error if sending the request or parsing the response fails.
-    pub async fn from_restaurant_page_url(url: &Url) -> Result<Vec<Self>> {
+    pub async fn all() -> Result<Vec<Self>> {
+        stream::iter(Location::all().await?)
+            .then(|location| async move {
+                location
+                    .restaurants()
+                    .await
+                    .map(|v| stream::iter(v.into_iter().map(Ok)))
+            })
+            .try_flatten()
+            .try_collect()
+            .await
+    }
+
+    /// Parse a restaurant list into a [`Vec<Restaurant>`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if sending the request or parsing the response fails.
+    pub async fn from_restaurant_list_url(url: &Url) -> Result<Vec<Self>> {
         let response = CLIENT.get(url.clone()).send().await?.error_for_status()?;
         let html = Html::parse_document(&response.text().await?);
 
-        Self::from_restaurant_page_html(&html)
+        Self::from_restaurant_list_html(&html)
     }
 
-    /// Parse a restaurant page [`Html`] document into a [`Vec<Restaurant>`].
+    /// Parse a restaurant list [`Html`] document into a [`Vec<Restaurant>`].
     ///
     /// # Errors
     ///
     /// This function will return an error if parsing the response fails.
     ///
     /// [`Html`]: scraper::Html
-    pub fn from_restaurant_page_html(html: &Html) -> Result<Vec<Self>> {
+    pub fn from_restaurant_list_html(html: &Html) -> Result<Vec<Self>> {
         html.select(selector!("div.unit"))
             .map(TryInto::try_into)
             .collect()
+    }
+}
+
+impl Display for Restaurant {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 

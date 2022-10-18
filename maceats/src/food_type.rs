@@ -1,4 +1,7 @@
-use std::str::FromStr;
+use std::{
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 
 use futures::{stream, StreamExt, TryStreamExt};
 use reqwest::Url;
@@ -66,12 +69,16 @@ impl FoodType {
     /// Get the urls for this [`FoodType`].
     #[must_use]
     pub fn urls(&self) -> Vec<Url> {
-        fn url(url: &str) -> Vec<Url> {
-            vec![url.parse::<Url>().expect("static url should be valid")]
+        macro_rules! url {
+            ($slug:literal) => {
+                vec![concat!("https://maceats.mcmaster.ca/types/", $slug)
+                    .parse::<Url>()
+                    .expect("static url should be valid")]
+            };
         }
 
         match self {
-            Self::Breakfast => url("https://maceats.mcmaster.ca/types/breakfast"),
+            Self::Breakfast => url!("breakfast"),
             Self::Coffee(Some(brand)) => vec![brand.url()],
             Self::Coffee(None) => vec![
                 CoffeeBrand::Marley.url(),
@@ -80,20 +87,20 @@ impl FoodType {
                 CoffeeBrand::TimHortons.url(),
                 CoffeeBrand::Williams.url(),
             ],
-            Self::Convenience => url("https://maceats.mcmaster.ca/types/convenience"),
-            Self::Dessert => url("https://maceats.mcmaster.ca/types/dessert"),
-            Self::GlutenFree => url("https://maceats.mcmaster.ca/types/gluten-free"),
-            Self::Grill => url("https://maceats.mcmaster.ca/types/grill"),
-            Self::Halal => url("https://maceats.mcmaster.ca/types/halal"),
-            Self::Kosher => url("https://maceats.mcmaster.ca/types/kosher"),
-            Self::Noodles => url("https://maceats.mcmaster.ca/types/noodles"),
-            Self::Pasta => url("https://maceats.mcmaster.ca/types/pasta"),
-            Self::Pizza => url("https://maceats.mcmaster.ca/types/pizza"),
-            Self::Sandwiches => url("https://maceats.mcmaster.ca/types/sandwiches"),
-            Self::Snacks => url("https://maceats.mcmaster.ca/types/snacks"),
-            Self::Soup => url("https://maceats.mcmaster.ca/types/soup"),
-            Self::Sushi => url("https://maceats.mcmaster.ca/types/sushi"),
-            Self::Vegetarian => url("https://maceats.mcmaster.ca/types/vegetarian"),
+            Self::Convenience => url!("convenience"),
+            Self::Dessert => url!("dessert"),
+            Self::GlutenFree => url!("gluten-free"),
+            Self::Grill => url!("grill"),
+            Self::Halal => url!("halal"),
+            Self::Kosher => url!("kosher"),
+            Self::Noodles => url!("noodles"),
+            Self::Pasta => url!("pasta"),
+            Self::Pizza => url!("pizza"),
+            Self::Sandwiches => url!("sandwiches"),
+            Self::Snacks => url!("snacks"),
+            Self::Soup => url!("soup"),
+            Self::Sushi => url!("sushi"),
+            Self::Vegetarian => url!("vegetarian"),
         }
     }
 
@@ -107,13 +114,37 @@ impl FoodType {
     pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
         stream::iter(self.urls())
             .then(|url| async move {
-                Restaurant::from_restaurant_page_url(&url)
+                Restaurant::from_restaurant_list_url(&url)
                     .await
                     .map(|v| stream::iter(v.into_iter().map(Ok)))
             })
             .try_flatten()
             .try_collect::<Vec<_>>()
             .await
+    }
+}
+
+impl Display for FoodType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Breakfast => write!(f, "Breakfast"),
+            Self::Coffee(Some(brand)) => write!(f, "Coffee ({})", brand),
+            Self::Coffee(None) => write!(f, "Coffee"),
+            Self::Convenience => write!(f, "Convenience"),
+            Self::Dessert => write!(f, "Dessert"),
+            Self::GlutenFree => write!(f, "Gluten Free"),
+            Self::Grill => write!(f, "Grill"),
+            Self::Halal => write!(f, "Halal"),
+            Self::Kosher => write!(f, "Kosher"),
+            Self::Noodles => write!(f, "Noodles"),
+            Self::Pasta => write!(f, "Pasta"),
+            Self::Pizza => write!(f, "Pizza"),
+            Self::Sandwiches => write!(f, "Sandwiches"),
+            Self::Snacks => write!(f, "Snacks"),
+            Self::Soup => write!(f, "Soup"),
+            Self::Sushi => write!(f, "Sushi"),
+            Self::Vegetarian => write!(f, "Vegetarian"),
+        }
     }
 }
 
@@ -206,7 +237,19 @@ impl CoffeeBrand {
         let response = CLIENT.get(self.url()).send().await?;
         let html = Html::parse_document(&response.text().await?);
 
-        Restaurant::from_restaurant_page_html(&html)
+        Restaurant::from_restaurant_list_html(&html)
+    }
+}
+
+impl Display for CoffeeBrand {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Marley => write!(f, "Marley"),
+            Self::Rejuvenate => write!(f, "Rejuvenate"),
+            Self::Starbucks => write!(f, "Starbucks"),
+            Self::TimHortons => write!(f, "Tim Hortons"),
+            Self::Williams => write!(f, "Williams"),
+        }
     }
 }
 
