@@ -4,7 +4,7 @@ use super::*;
 
 #[test]
 fn local_parse_restaurants() {
-    let html = Html::parse_document(include_str!("tests/student-centre.html"));
+    let html = Html::parse_document(include_str!("test_data/locations/student-centre.html"));
 
     let restaurants = Restaurant::from_restaurant_list_html(&html).unwrap();
 
