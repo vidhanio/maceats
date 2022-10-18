@@ -3,12 +3,11 @@ use std::{
     str::FromStr,
 };
 
-use futures::{stream, StreamExt, TryStreamExt};
 use reqwest::Url;
-use scraper::{ElementRef, Html};
+use scraper::ElementRef;
 use serde::{Deserialize, Serialize};
 
-use crate::{Error, Restaurant, Result, CLIENT};
+use crate::{Error, Restaurant, Result};
 
 /// The type of food served at a [`Restaurant`].
 ///
@@ -20,7 +19,7 @@ pub enum FoodType {
     Breakfast,
 
     /// Coffee.
-    Coffee(Option<CoffeeBrand>),
+    Coffee,
 
     /// Convenience food.
     Convenience,
@@ -68,25 +67,20 @@ pub enum FoodType {
 impl FoodType {
     /// Get the urls for this [`FoodType`].
     #[must_use]
-    pub fn urls(&self) -> Vec<Url> {
+    pub fn url(&self) -> Option<Url> {
         macro_rules! url {
             ($slug:literal) => {
-                vec![concat!("https://maceats.mcmaster.ca/types/", $slug)
-                    .parse::<Url>()
-                    .expect("static url should be valid")]
+                Some(
+                    concat!("https://maceats.mcmaster.ca/types/", $slug)
+                        .parse::<Url>()
+                        .expect("static url should be valid"),
+                )
             };
         }
 
         match self {
             Self::Breakfast => url!("breakfast"),
-            Self::Coffee(Some(brand)) => vec![brand.url()],
-            Self::Coffee(None) => vec![
-                CoffeeBrand::Marley.url(),
-                CoffeeBrand::Rejuvenate.url(),
-                CoffeeBrand::Starbucks.url(),
-                CoffeeBrand::TimHortons.url(),
-                CoffeeBrand::Williams.url(),
-            ],
+            Self::Coffee => None,
             Self::Convenience => url!("convenience"),
             Self::Dessert => url!("dessert"),
             Self::GlutenFree => url!("gluten-free"),
@@ -108,19 +102,19 @@ impl FoodType {
     ///
     /// # Errors
     ///
-    /// This function will return an error if sending the request or parsing the response fails.a
+    /// This function will return an error if sending the request or parsing the response fails.
     ///
     /// [`Restaurant`]: crate::Restaurant
     pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
-        stream::iter(self.urls())
-            .then(|url| async move {
-                Restaurant::from_restaurant_list_url(&url)
-                    .await
-                    .map(|v| stream::iter(v.into_iter().map(Ok)))
-            })
-            .try_flatten()
-            .try_collect::<Vec<_>>()
-            .await
+        if let Some(url) = self.url() {
+            Restaurant::from_restaurant_list_url(&url).await
+        } else {
+            Ok(Restaurant::all()
+                .await?
+                .into_iter()
+                .filter(|r| r.tags.contains(self))
+                .collect())
+        }
     }
 }
 
@@ -128,8 +122,7 @@ impl Display for FoodType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Breakfast => write!(f, "Breakfast"),
-            Self::Coffee(Some(brand)) => write!(f, "Coffee ({})", brand),
-            Self::Coffee(None) => write!(f, "Coffee"),
+            Self::Coffee => write!(f, "Coffee"),
             Self::Convenience => write!(f, "Convenience"),
             Self::Dessert => write!(f, "Dessert"),
             Self::GlutenFree => write!(f, "Gluten Free"),
@@ -154,7 +147,7 @@ impl FromStr for FoodType {
     fn from_str(s: &str) -> Result<Self> {
         match s {
             "Breakfast" => Ok(Self::Breakfast),
-            "Coffee" => Ok(Self::Coffee(None)),
+            "Coffee" => Ok(Self::Coffee),
             "Convenience" => Ok(Self::Convenience),
             "Dessert" => Ok(Self::Dessert),
             "Gluten Free" => Ok(Self::GlutenFree),
@@ -186,84 +179,5 @@ impl TryFrom<ElementRef<'_>> for FoodType {
             .ok_or(Error::ParseElement("food type"))?;
 
         Self::from_str(text)
-    }
-}
-
-/// A brand of coffee served at a [`Restaurant`].
-///
-/// [`Restaurant`]: crate::Restaurant
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum CoffeeBrand {
-    /// Marley.
-    Marley,
-
-    /// Rejuvenate.
-    Rejuvenate,
-
-    /// Starbucks.
-    Starbucks,
-
-    /// Tim Hortons.
-    TimHortons,
-
-    /// Williams.
-    Williams,
-}
-
-impl CoffeeBrand {
-    /// Get the url for this [`CoffeeBrand`].
-    #[must_use]
-    pub fn url(&self) -> Url {
-        match self {
-            Self::Marley => "https://maceats.mcmaster.ca/types/coffee/marley",
-            Self::Rejuvenate => "https://maceats.mcmaster.ca/types/coffee/rejuvenate",
-            Self::Starbucks => "https://maceats.mcmaster.ca/types/coffee/starbucks",
-            Self::TimHortons => "https://maceats.mcmaster.ca/types/coffee/tim-hortons",
-            Self::Williams => "https://maceats.mcmaster.ca/types/coffee/williams",
-        }
-        .parse()
-        .expect("static url should be valid")
-    }
-
-    /// Get the [`Restaurant`]s that serve this coffee brand.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if sending the request or parsing the response fails.a
-    ///
-    /// [`Restaurant`]: crate::Restaurant
-    pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
-        let response = CLIENT.get(self.url()).send().await?;
-        let html = Html::parse_document(&response.text().await?);
-
-        Restaurant::from_restaurant_list_html(&html)
-    }
-}
-
-impl Display for CoffeeBrand {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Marley => write!(f, "Marley"),
-            Self::Rejuvenate => write!(f, "Rejuvenate"),
-            Self::Starbucks => write!(f, "Starbucks"),
-            Self::TimHortons => write!(f, "Tim Hortons"),
-            Self::Williams => write!(f, "Williams"),
-        }
-    }
-}
-
-impl FromStr for CoffeeBrand {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "Marley" => Ok(Self::Marley),
-            "Rejuvenate" => Ok(Self::Rejuvenate),
-            "Starbucks" => Ok(Self::Starbucks),
-            "Tim Hortons" => Ok(Self::TimHortons),
-            "Williams" => Ok(Self::Williams),
-            s => Err(Error::ParseCoffeeBrand(s.into())),
-        }
     }
 }

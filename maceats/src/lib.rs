@@ -16,6 +16,7 @@
 #![allow(clippy::multiple_crate_versions)]
 #![allow(clippy::use_self)]
 
+mod coffee_brand;
 mod error;
 mod food_type;
 mod location;
@@ -28,8 +29,9 @@ mod tests;
 use once_cell::sync::Lazy;
 use reqwest::Client;
 
+pub use coffee_brand::CoffeeBrand;
 pub use error::{Error, Result};
-pub use food_type::{CoffeeBrand, FoodType};
+pub use food_type::FoodType;
 pub use location::Location;
 pub use restaurant::Restaurant;
 pub use times::{Open, Times};

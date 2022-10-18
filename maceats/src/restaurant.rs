@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt::{self, write, Display, Formatter},
+    fmt::{self, Display, Formatter},
 };
 
 use chrono::{Duration, Local, NaiveDate};
