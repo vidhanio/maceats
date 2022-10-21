@@ -1,6 +1,7 @@
 use thiserror::Error;
 
-/// An error type representing all possible errors that can occur when using this crate.
+/// An error type representing all possible errors that can occur when using
+/// this crate.
 #[derive(Debug, Error)]
 pub enum Error {
     /// A [`reqwest::Error`] occurred.
@@ -32,7 +33,8 @@ pub enum Error {
     ParseCoffeeBrand(String),
 }
 
-/// A convenience type representing a [`Result`] with the error type set to [`Error`].
+/// A convenience type representing a [`Result`] with the error type set to
+/// [`enum@Error`].
 ///
 /// [`Result`]: std::result::Result
 pub type Result<T> = std::result::Result<T, Error>;

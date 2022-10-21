@@ -52,7 +52,8 @@ impl Location {
     ///
     /// # Errors
     ///
-    /// This function will return an error if sending the request or parsing the response fails.
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
     pub async fn from_location_list_url(url: &Url) -> Result<Vec<Self>> {
         let response = CLIENT.get(url.clone()).send().await?.error_for_status()?;
         let html = Html::parse_document(&response.text().await?);
@@ -64,7 +65,8 @@ impl Location {
     ///
     /// # Errors
     ///
-    /// This function will return an error if sending the request or parsing the response fails.
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
     pub fn from_location_list_html(html: &Html) -> Result<Vec<Self>> {
         html.select(selector!("div.unit.unit-location"))
             .map(TryInto::try_into)
@@ -75,7 +77,8 @@ impl Location {
     ///
     /// # Errors
     ///
-    /// This function will return an error if sending the request or parsing the response fails.
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
     pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
         let response = CLIENT.get(self.url.clone()).send().await?;
         let html = Html::parse_document(&response.text().await?);
@@ -105,12 +108,12 @@ impl TryFrom<ElementRef<'_>> for Location {
         element = element
             .select(selector!("a"))
             .next()
-            .ok_or(Error::ParseElement("location"))?;
+            .ok_or_else(|| Error::ParseElement("location"))?;
 
         let name = element
             .text()
             .next()
-            .ok_or(Error::ParseElement("location"))?
+            .ok_or_else(|| Error::ParseElement("location"))?
             .trim()
             .to_owned();
 
@@ -118,7 +121,7 @@ impl TryFrom<ElementRef<'_>> for Location {
             element
                 .value()
                 .attr("href")
-                .ok_or(Error::ParseElement("location"))?,
+                .ok_or_else(|| Error::ParseElement("location"))?,
         )?;
 
         Ok(Self { name, url })

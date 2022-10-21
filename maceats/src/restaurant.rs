@@ -38,7 +38,8 @@ impl Restaurant {
     ///
     /// # Errors
     ///
-    /// This function will return an error if sending the request or parsing the response fails.
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
     pub async fn all() -> Result<Vec<Self>> {
         stream::iter(Location::all().await?)
             .then(|location| async move {
@@ -56,7 +57,8 @@ impl Restaurant {
     ///
     /// # Errors
     ///
-    /// This function will return an error if sending the request or parsing the response fails.
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
     pub async fn from_restaurant_list_url(url: &Url) -> Result<Vec<Self>> {
         let response = CLIENT.get(url.clone()).send().await?.error_for_status()?;
         let html = Html::parse_document(&response.text().await?);

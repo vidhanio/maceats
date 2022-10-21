@@ -26,17 +26,15 @@ pub enum Times {
 impl Display for Times {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Open(times) => times.iter().enumerate().for_each(|(i, time)| {
+            Self::Open(times) => times.iter().enumerate().try_for_each(|(i, time)| {
                 if i > 0 {
-                    write!(f, ", ").unwrap();
+                    write!(f, ", ")?;
                 }
 
-                write!(f, "{}", time).unwrap();
+                write!(f, "{time}")
             }),
-            Self::Closed => write!(f, "Closed")?,
+            Self::Closed => write!(f, "Closed"),
         }
-
-        Ok(())
     }
 }
 
@@ -66,7 +64,7 @@ impl TryFrom<ElementRef<'_>> for Times {
         let text = element
             .text()
             .next()
-            .ok_or(Error::ParseElement("time"))?
+            .ok_or_else(|| Error::ParseElement("time"))?
             .trim();
 
         text.parse()
@@ -100,7 +98,9 @@ impl FromStr for Open {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let (from_s, to_s) = s.split_once(" - ").ok_or(Error::ParseElement("time"))?;
+        let (from_s, to_s) = s
+            .split_once(" - ")
+            .ok_or_else(|| Error::ParseElement("time"))?;
 
         let re = regex!(r"^(?P<hour>\d{1,2}) (?P<am_pm>am|pm)$");
 

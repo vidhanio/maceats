@@ -34,22 +34,29 @@ impl CoffeeBrand {
     /// Get the url for this [`CoffeeBrand`].
     #[must_use]
     pub fn url(&self) -> Url {
-        match self {
-            Self::Marley => "https://maceats.mcmaster.ca/types/coffee/marley",
-            Self::Rejuvenate => "https://maceats.mcmaster.ca/types/coffee/rejuvenate",
-            Self::Starbucks => "https://maceats.mcmaster.ca/types/coffee/starbucks",
-            Self::TimHortons => "https://maceats.mcmaster.ca/types/coffee/tim-hortons",
-            Self::Williams => "https://maceats.mcmaster.ca/types/coffee/williams",
+        macro_rules! url {
+            ($slug:literal) => {
+                concat!("https://maceats.mcmaster.ca/types/coffee/", $slug)
+                    .parse()
+                    .expect("static url should be valid")
+            };
         }
-        .parse()
-        .expect("static url should be valid")
+
+        match self {
+            Self::Marley => url!("marley"),
+            Self::Rejuvenate => url!("rejuvenate"),
+            Self::Starbucks => url!("starbucks"),
+            Self::TimHortons => url!("tim-hortons"),
+            Self::Williams => url!("williams"),
+        }
     }
 
     /// Get the [`Restaurant`]s that serve this coffee brand.
     ///
     /// # Errors
     ///
-    /// This function will return an error if sending the request or parsing the response fails.
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
     ///
     /// [`Restaurant`]: crate::Restaurant
     pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
@@ -59,13 +66,17 @@ impl CoffeeBrand {
 
 impl Display for CoffeeBrand {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Marley => write!(f, "Marley"),
-            Self::Rejuvenate => write!(f, "Rejuvenate"),
-            Self::Starbucks => write!(f, "Starbucks"),
-            Self::TimHortons => write!(f, "Tim Hortons"),
-            Self::Williams => write!(f, "Williams"),
-        }
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Marley => "Marley",
+                Self::Rejuvenate => "Rejuvenate",
+                Self::Starbucks => "Starbucks",
+                Self::TimHortons => "Tim Hortons",
+                Self::Williams => "Williams",
+            }
+        )
     }
 }
 

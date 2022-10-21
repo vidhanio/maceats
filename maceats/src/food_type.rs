@@ -72,7 +72,7 @@ impl FoodType {
             ($slug:literal) => {
                 Some(
                     concat!("https://maceats.mcmaster.ca/types/", $slug)
-                        .parse::<Url>()
+                        .parse()
                         .expect("static url should be valid"),
                 )
             };
@@ -100,11 +100,18 @@ impl FoodType {
 
     /// Get the [`Restaurant`]s that serve this food type.
     ///
+    /// Note that this function will get, then filter all [`Restaurant`]s if
+    /// `self` is [`FoodType::Coffee`], as MacEats provides no way to filter for
+    /// all coffee. To get the [`Restaurant`]s that serve a specific brand of
+    /// coffee, use [`CoffeeBrand::restaurants`].
+    ///
     /// # Errors
     ///
-    /// This function will return an error if sending the request or parsing the response fails.
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
     ///
     /// [`Restaurant`]: crate::Restaurant
+    /// [`CoffeeBrand::restaurants`]: crate::CoffeeBrand::restaurants
     pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
         if let Some(url) = self.url() {
             Restaurant::from_restaurant_list_url(&url).await
@@ -114,6 +121,21 @@ impl FoodType {
                 .into_iter()
                 .filter(|r| r.tags.contains(self))
                 .collect())
+        }
+    }
+
+    /// Get the [`Restaurant`]s that serve this food type, returning an empty
+    /// [`Vec<Restaurant>`] if `self` is [`FoodType::Coffee`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
+    pub async fn restaurants_no_coffee(&self) -> Result<Vec<Restaurant>> {
+        if let Some(url) = self.url() {
+            Restaurant::from_restaurant_list_url(&url).await
+        } else {
+            Ok(Vec::new())
         }
     }
 }
@@ -176,7 +198,7 @@ impl TryFrom<ElementRef<'_>> for FoodType {
         let text = element
             .text()
             .next()
-            .ok_or(Error::ParseElement("food type"))?;
+            .ok_or_else(|| Error::ParseElement("food type"))?;
 
         Self::from_str(text)
     }
