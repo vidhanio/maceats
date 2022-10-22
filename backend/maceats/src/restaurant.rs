@@ -46,11 +46,26 @@ impl Restaurant {
                 location
                     .restaurants()
                     .await
-                    .map(|v| stream::iter(v.into_iter().map(Ok)))
+                    .map(|v| stream::iter(v).map(Ok))
             })
             .try_flatten()
             .try_collect()
             .await
+    }
+
+    /// Get all restaurants open now.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if sending the request or parsing the
+    /// response fails.
+    pub async fn open_now() -> Result<Vec<Self>> {
+        Self::from_restaurant_list_url(
+            "https://maceats.mcmaster.ca/open-now"
+                .parse()
+                .expect("static url is valid"),
+        )
+        .await
     }
 
     /// Parse a restaurant list into a [`Vec<Restaurant>`].
@@ -59,8 +74,8 @@ impl Restaurant {
     ///
     /// This function will return an error if sending the request or parsing the
     /// response fails.
-    pub async fn from_restaurant_list_url(url: &Url) -> Result<Vec<Self>> {
-        let response = CLIENT.get(url.clone()).send().await?.error_for_status()?;
+    pub async fn from_restaurant_list_url(url: Url) -> Result<Vec<Self>> {
+        let response = CLIENT.get(url).send().await?.error_for_status()?;
         let html = Html::parse_document(&response.text().await?);
 
         Self::from_restaurant_list_html(&html)
@@ -89,10 +104,10 @@ impl Display for Restaurant {
 impl TryFrom<ElementRef<'_>> for Restaurant {
     type Error = Error;
 
-    fn try_from(element_ref: ElementRef<'_>) -> Result<Self> {
+    fn try_from(element: ElementRef<'_>) -> Result<Self> {
         macro_rules! select_text {
             ($selector:literal, $name:literal) => {
-                element_ref
+                element
                     .select(selector!($selector))
                     .next()
                     .ok_or(Error::ParseElement($name))?
@@ -105,11 +120,11 @@ impl TryFrom<ElementRef<'_>> for Restaurant {
 
         macro_rules! select_optional_text {
             ($selector:literal, $name:literal) => {
-                element_ref
+                element
                     .select(selector!($selector))
                     .next()
-                    .map(|element_ref| {
-                        element_ref
+                    .map(|element| {
+                        element
                             .text()
                             .next()
                             .ok_or(Error::ParseElement($name))
@@ -129,7 +144,7 @@ impl TryFrom<ElementRef<'_>> for Restaurant {
         let location_phone =
             select_optional_text!("div.location-phone", "location phone").map(ToOwned::to_owned);
 
-        let schedule = element_ref
+        let schedule = element
             .select(selector!("div.schedule"))
             .next()
             .map(|schedule| {
@@ -144,7 +159,7 @@ impl TryFrom<ElementRef<'_>> for Restaurant {
             })
             .transpose()?;
 
-        let tags = element_ref
+        let tags = element
             .select(selector!("ul.tags"))
             .next()
             .map(|tags| {

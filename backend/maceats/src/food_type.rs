@@ -114,7 +114,7 @@ impl FoodType {
     /// [`CoffeeBrand::restaurants`]: crate::CoffeeBrand::restaurants
     pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
         if let Some(url) = self.url() {
-            Restaurant::from_restaurant_list_url(&url).await
+            Restaurant::from_restaurant_list_url(url).await
         } else {
             Ok(Restaurant::all()
                 .await?
@@ -133,7 +133,7 @@ impl FoodType {
     /// response fails.
     pub async fn restaurants_no_coffee(&self) -> Result<Vec<Restaurant>> {
         if let Some(url) = self.url() {
-            Restaurant::from_restaurant_list_url(&url).await
+            Restaurant::from_restaurant_list_url(url).await
         } else {
             Ok(Vec::new())
         }
@@ -168,22 +168,22 @@ impl FromStr for FoodType {
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
-            "Breakfast" => Ok(Self::Breakfast),
-            "Coffee" => Ok(Self::Coffee),
-            "Convenience" => Ok(Self::Convenience),
-            "Dessert" => Ok(Self::Dessert),
-            "Gluten Free" => Ok(Self::GlutenFree),
-            "Grill" => Ok(Self::Grill),
-            "Halal" => Ok(Self::Halal),
-            "Kosher" => Ok(Self::Kosher),
-            "Noodles" => Ok(Self::Noodles),
-            "Pasta" => Ok(Self::Pasta),
-            "Pizza" => Ok(Self::Pizza),
-            "Sandwiches" => Ok(Self::Sandwiches),
-            "Snacks" => Ok(Self::Snacks),
-            "Soup" => Ok(Self::Soup),
-            "Sushi" => Ok(Self::Sushi),
-            "Vegetarian" => Ok(Self::Vegetarian),
+            "Breakfast" | "breakfast" => Ok(Self::Breakfast),
+            "Coffee" | "coffee" => Ok(Self::Coffee),
+            "Convenience" | "convenience" => Ok(Self::Convenience),
+            "Dessert" | "dessert" => Ok(Self::Dessert),
+            "Gluten Free" | "gluten-free" => Ok(Self::GlutenFree),
+            "Grill" | "grill" => Ok(Self::Grill),
+            "Halal" | "halal" => Ok(Self::Halal),
+            "Kosher" | "kosher" => Ok(Self::Kosher),
+            "Noodles" | "noodles" => Ok(Self::Noodles),
+            "Pasta" | "pasta" => Ok(Self::Pasta),
+            "Pizza" | "pizza" => Ok(Self::Pizza),
+            "Sandwiches" | "sandwiches" => Ok(Self::Sandwiches),
+            "Snacks" | "snacks" => Ok(Self::Snacks),
+            "Soup" | "soup" => Ok(Self::Soup),
+            "Sushi" | "sushi" => Ok(Self::Sushi),
+            "Vegetarian" | "vegetarian" => Ok(Self::Vegetarian),
             s => Err(Error::ParseFoodType(s.into())),
         }
     }

@@ -60,7 +60,7 @@ impl CoffeeBrand {
     ///
     /// [`Restaurant`]: crate::Restaurant
     pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
-        Restaurant::from_restaurant_list_url(&self.url()).await
+        Restaurant::from_restaurant_list_url(self.url()).await
     }
 }
 

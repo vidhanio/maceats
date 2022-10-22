@@ -1,6 +1,7 @@
 use std::{
     borrow::ToOwned,
     fmt::{self, Display, Formatter},
+    str::FromStr,
 };
 
 use heck::ToKebabCase;
@@ -41,7 +42,7 @@ impl Location {
     /// This function will return an error if the request fails.
     pub async fn all() -> Result<Vec<Self>> {
         Self::from_location_list_url(
-            &"https://maceats.mcmaster.ca/locations"
+            "https://maceats.mcmaster.ca/locations"
                 .parse()
                 .expect("static url should be valid"),
         )
@@ -54,8 +55,8 @@ impl Location {
     ///
     /// This function will return an error if sending the request or parsing the
     /// response fails.
-    pub async fn from_location_list_url(url: &Url) -> Result<Vec<Self>> {
-        let response = CLIENT.get(url.clone()).send().await?.error_for_status()?;
+    pub async fn from_location_list_url(url: Url) -> Result<Vec<Self>> {
+        let response = CLIENT.get(url).send().await?.error_for_status()?;
         let html = Html::parse_document(&response.text().await?);
 
         Self::from_location_list_html(&html)
@@ -90,6 +91,14 @@ impl Location {
 impl Display for Location {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
+    }
+}
+
+impl FromStr for Location {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        Ok(Self::new(s))
     }
 }
 
