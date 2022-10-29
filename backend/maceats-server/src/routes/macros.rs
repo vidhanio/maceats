@@ -1,8 +1,5 @@
-pub(super) fn reject_all<R: ::warp::Reply>(
-) -> impl ::warp::Filter<Extract = (R,), Error = warp::Rejection> + ::std::clone::Clone {
-    use ::warp::Filter;
-
-    ::warp::any().and_then(|| async { Err(::warp::reject::not_found()) })
+pub(super) fn reject_all<R: Reply>() -> impl Filter<Extract = (R,), Error = Rejection> + Clone {
+    warp::any().and_then(|| async { Err(warp::reject::not_found()) })
 }
 
 macro_rules! modules {
@@ -50,3 +47,4 @@ macro_rules! routes {
 }
 
 pub(super) use routes;
+use warp::{Filter, Rejection, Reply};

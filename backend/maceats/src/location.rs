@@ -30,7 +30,16 @@ impl Location {
             name: name.to_owned(),
             url: "https://maceats.mcmaster.ca/locations/"
                 .parse::<Url>()
-                .and_then(|url| url.join(&name.to_kebab_case()))
+                .and_then(|url| {
+                    url.join(
+                        &name
+                            .split_whitespace()
+                            .filter(|s| !s.eq_ignore_ascii_case("for"))
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                            .to_kebab_case(),
+                    )
+                })
                 .expect("url should be valid"),
         }
     }
@@ -117,12 +126,12 @@ impl TryFrom<ElementRef<'_>> for Location {
         element = element
             .select(selector!("a"))
             .next()
-            .ok_or_else(|| Error::ParseElement("location"))?;
+            .ok_or_else(|| Error::ElementNotFound("location"))?;
 
         let name = element
             .text()
             .next()
-            .ok_or_else(|| Error::ParseElement("location"))?
+            .ok_or_else(|| Error::TextNotFound("location"))?
             .trim()
             .to_owned();
 
@@ -130,7 +139,7 @@ impl TryFrom<ElementRef<'_>> for Location {
             element
                 .value()
                 .attr("href")
-                .ok_or_else(|| Error::ParseElement("location"))?,
+                .ok_or_else(|| Error::AttributeNotFound("location"))?,
         )?;
 
         Ok(Self { name, url })

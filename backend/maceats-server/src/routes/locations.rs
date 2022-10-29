@@ -3,6 +3,6 @@ use maceats::Location;
 super::routes! {
     locations {
         all: warp::path!(),
-        restaurants: warp::path!("location" / Location)
+        restaurants: warp::path!(Location)
     }
 }

@@ -198,8 +198,8 @@ impl TryFrom<ElementRef<'_>> for FoodType {
         let text = element
             .text()
             .next()
-            .ok_or_else(|| Error::ParseElement("food type"))?;
+            .ok_or_else(|| Error::TextNotFound("food type"))?;
 
-        Self::from_str(text)
+        text.parse()
     }
 }

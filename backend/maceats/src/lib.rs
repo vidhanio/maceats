@@ -23,8 +23,6 @@ mod location;
 mod times;
 
 mod restaurant;
-#[cfg(test)]
-mod tests;
 
 use once_cell::sync::Lazy;
 use reqwest::Client;

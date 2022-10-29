@@ -5,8 +5,8 @@ macro_rules! handlers {
         $(
             pub async fn $name($($arg: $ty),*) -> ::std::result::Result<impl ::warp::Reply, ::warp::Rejection> {
                 $e.await
-                    .map(|ref v| ::warp::reply::json(v))
-                    .map_err($crate::Error::from)
+                    .map($crate::SuccessResponse::from)
+                    .map_err($crate::ErrorResponse::from)
                     .map_err(::warp::Rejection::from)
             }
         )*

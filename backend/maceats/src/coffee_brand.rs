@@ -37,8 +37,6 @@ impl CoffeeBrand {
         macro_rules! url {
             ($slug:literal) => {
                 concat!("https://maceats.mcmaster.ca/types/coffee/", $slug)
-                    .parse()
-                    .expect("static url should be valid")
             };
         }
 
@@ -49,6 +47,8 @@ impl CoffeeBrand {
             Self::TimHortons => url!("tim-hortons"),
             Self::Williams => url!("williams"),
         }
+        .parse()
+        .expect("static url should be valid")
     }
 
     /// Get the [`Restaurant`]s that serve this coffee brand.

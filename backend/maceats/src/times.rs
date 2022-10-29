@@ -64,7 +64,7 @@ impl TryFrom<ElementRef<'_>> for Times {
         let text = element
             .text()
             .next()
-            .ok_or_else(|| Error::ParseElement("time"))?
+            .ok_or_else(|| Error::TextNotFound("time"))?
             .trim();
 
         text.parse()
@@ -98,9 +98,7 @@ impl FromStr for Open {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let (from_s, to_s) = s
-            .split_once(" - ")
-            .ok_or_else(|| Error::ParseElement("time"))?;
+        let (from_s, to_s) = s.split_once(" - ").ok_or(Error::SplitTime)?;
 
         let re = regex!(r"^(?P<hour>\d{1,2}) (?P<am_pm>am|pm)$");
 

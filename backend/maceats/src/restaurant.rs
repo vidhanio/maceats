@@ -110,10 +110,10 @@ impl TryFrom<ElementRef<'_>> for Restaurant {
                 element
                     .select(selector!($selector))
                     .next()
-                    .ok_or(Error::ParseElement($name))?
+                    .ok_or(Error::ElementNotFound($name))?
                     .text()
                     .next()
-                    .ok_or(Error::ParseElement($name))?
+                    .ok_or(Error::TextNotFound($name))?
                     .trim()
             };
         }
@@ -127,7 +127,7 @@ impl TryFrom<ElementRef<'_>> for Restaurant {
                         element
                             .text()
                             .next()
-                            .ok_or(Error::ParseElement($name))
+                            .ok_or(Error::TextNotFound($name))
                             .map(|s| s.trim())
                     })
                     .transpose()?

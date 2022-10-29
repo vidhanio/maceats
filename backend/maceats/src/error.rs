@@ -16,9 +16,21 @@ pub enum Error {
     #[error("chrono parse error")]
     ParseChrono(#[from] chrono::ParseError),
 
-    /// An element parse error occurred.
-    #[error("element parse error: {0}")]
-    ParseElement(&'static str),
+    /// No element matching the selector was found.
+    #[error("no element matching selector error: {0}")]
+    ElementNotFound(&'static str),
+
+    /// No text was found in the element.
+    #[error("element text not found error: {0}")]
+    TextNotFound(&'static str),
+
+    /// No attribute was found in the element matching the selector.
+    #[error("no attribute matching selector error: {0}")]
+    AttributeNotFound(&'static str),
+
+    /// An error ocurred while splitting time on ` - `.
+    #[error("error splitting time on ` - `")]
+    SplitTime,
 
     /// An error occurred while parsing a [`FoodType`].
     ///
