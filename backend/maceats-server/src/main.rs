@@ -24,6 +24,7 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 
 use clap::Parser;
+use tokio_cron_scheduler::{Job, JobScheduler};
 use warp::{
     http::StatusCode,
     hyper::Method,
@@ -36,6 +37,8 @@ use warp::{
 
 use models::error::ErrorResponse;
 use models::success::SuccessResponse;
+
+use crate::handlers::CACHE;
 
 #[derive(Parser)]
 struct Arguments {
@@ -80,6 +83,16 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
 async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
     pretty_env_logger::init();
+
+    let sched = JobScheduler::new().await?;
+    sched
+        .add(Job::new_async("0 0 0 * * * *", |_, _| {
+            Box::pin(async {
+                CACHE.lock().await.invalidate();
+            })
+        })?)
+        .await?;
+    sched.start().await?;
 
     let args = Arguments::parse();
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));

@@ -1,6 +1,8 @@
 use maceats::Location;
 
+use super::CACHE;
+
 super::handlers! {
-    all: () => Location::all(),
-    restaurants: (loc: Location) => loc.restaurants(),
+    all: () => CACHE.lock().await.locations_all(),
+    restaurants: (loc: Location) => CACHE.lock().await.location_restaurants(loc),
 }

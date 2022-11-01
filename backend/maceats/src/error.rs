@@ -43,6 +43,10 @@ pub enum Error {
     /// [`Location`]: crate::Location
     #[error("coffee brand parse error: {0}")]
     ParseCoffeeBrand(String),
+
+    /// A miscellaneous error occurred.
+    #[error("miscellaneous error: {0}")]
+    Misc(&'static str),
 }
 
 /// A convenience type representing a [`Result`] with the error type set to
