@@ -98,6 +98,29 @@ impl FoodType {
         }
     }
 
+    /// Get every [`FoodType`].
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[
+            Self::Breakfast,
+            Self::Coffee,
+            Self::Convenience,
+            Self::Dessert,
+            Self::GlutenFree,
+            Self::Grill,
+            Self::Halal,
+            Self::Kosher,
+            Self::Noodles,
+            Self::Pasta,
+            Self::Pizza,
+            Self::Sandwiches,
+            Self::Snacks,
+            Self::Soup,
+            Self::Sushi,
+            Self::Vegetarian,
+        ]
+    }
+
     /// Get the [`Restaurant`]s that serve this food type.
     ///
     /// Note that this function will get, then filter all [`Restaurant`]s if

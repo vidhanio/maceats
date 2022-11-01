@@ -31,7 +31,7 @@ impl Location {
             name: name.to_owned(),
             slug: name
                 .split_whitespace()
-                .filter(|s| !s.eq_ignore_ascii_case("for"))
+                .filter(|s| !(s.eq_ignore_ascii_case("for") || s.eq_ignore_ascii_case("off")))
                 .collect::<Vec<_>>()
                 .join(" ")
                 .to_kebab_case(),

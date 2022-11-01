@@ -23,14 +23,14 @@ pub(super) use modules;
 
 macro_rules! routes {
     {
-        $module:ident {
+        $module:ident ($route:literal) {
             $($filter:ident: $path:expr),* $(,)?
         }
     } => {
         pub fn filter() -> impl ::warp::Filter<Extract = (impl ::warp::Reply,), Error = ::warp::Rejection> + ::std::clone::Clone {
             use ::warp::Filter;
 
-            ::warp::path(stringify!($module))
+            ::warp::path($route)
                 .and($crate::routes::macros::reject_all::<::warp::reply::Json>()
                         $(.or($filter()))*
                 )
