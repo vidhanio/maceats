@@ -1,10 +1,14 @@
 {
   "folders": [
     {
+      "path": "crate"
+    },
+    {
       "path": "backend"
     },
     {
       "path": "frontend"
     }
-  ]
+  ],
+  "settings": {}
 }
