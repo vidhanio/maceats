@@ -1,13 +1,19 @@
 import { Suspense } from "react";
 import ButtonList from "../../components/button-list";
-import { get, Location } from "../../types";
+import { FoodType, get, Location } from "../../types";
+
+function toTitleCase(str: string): string {
+  return str.replace(/\w\S*/g, function (txt) {
+    return txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase();
+  });
+}
 
 export default async function Page() {
-  const promise = get<Location[]>(`/locations`).then((response) => {
+  const promise = get<FoodType[]>(`/food-types`).then((response) => {
     return {
-      data: response.data?.map((location) => ({
-        text: location.name,
-        href: `/locations/${location.slug}`,
+      data: response.data?.map((tag) => ({
+        text: toTitleCase(tag),
+        href: `/restaurants/food-type/${tag}`,
       })),
       error: response.error,
     };

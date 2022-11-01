@@ -12,7 +12,7 @@ export default async function RestaurantList({ promise, tag }: Props) {
   if (restaurants.error) throw new Error(restaurants.error);
 
   return (
-    <div className="flex flex-row flex-wrap items-center justify-center gap-8 p-8">
+    <div className="flex flex-row flex-wrap items-center justify-center gap-8">
       {restaurants.data?.map((restaurant) => (
         <RestaurantCard
           key={restaurant.name}

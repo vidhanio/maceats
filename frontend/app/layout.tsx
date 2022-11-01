@@ -30,14 +30,12 @@ export default function RootLayout({
           </Link>
           <Link
             className="px-4 py-2 bg-gray-300 rounded-md dark:bg-gray-700"
-            href="/restaurants/food-types"
+            href="/food-types"
           >
             Food Types
           </Link>
         </nav>
-        <main className="flex flex-col items-center justify-center p-8 text-center">
-          {children}
-        </main>
+        <main>{children}</main>
       </body>
     </html>
   );

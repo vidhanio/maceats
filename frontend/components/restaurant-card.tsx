@@ -44,7 +44,7 @@ export function ScheduleTable({
 
 export default function RestaurantCard({ restaurant, tag }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center w-full gap-4 p-8 text-center text-gray-800 bg-gray-200 shadow-xl lg:flex-row lg:w-4/5 rounded-xl dark:bg-gray-800 dark:text-gray-200">
+    <div className="flex flex-col items-center justify-center w-full gap-4 p-8 text-center text-gray-800 bg-gray-200 shadow-md md:flex-row md:w-4/5 rounded-md dark:bg-gray-800 dark:text-gray-200">
       <div className="flex flex-col items-center justify-center w-full gap-4">
         <h1 className="text-2xl font-bold">{restaurant.name}</h1>
         <Link
@@ -60,7 +60,7 @@ export default function RestaurantCard({ restaurant, tag }: Props) {
           <p className="text-sm">{restaurant.location_phone}</p>
         )}
         {restaurant.tags && (
-          <div className="flex flex-row flex-wrap items-center justify-center gap-2 lg:w-1/2">
+          <div className="flex flex-row flex-wrap items-center justify-center gap-2 md:w-1/2">
             {restaurant.tags.map((t) => (
               <Tag key={t} tag={t} selected={tag ? tag == t : false} />
             ))}
