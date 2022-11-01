@@ -9,7 +9,7 @@ pub struct Cache {
     restaurants_coffee_brand: HashMap<CoffeeBrand, Vec<Restaurant>>,
 
     locations_all: Option<Vec<Location>>,
-    location_restaurants: HashMap<Location, Vec<Restaurant>>,
+    location_restaurants: HashMap<String, Vec<Restaurant>>,
 }
 
 impl Cache {
@@ -73,20 +73,20 @@ impl Cache {
     }
 
     pub async fn location_restaurants(&mut self, location: Location) -> Result<Vec<Restaurant>> {
-        if !self.location_restaurants.contains_key(&location) {
+        if !self.location_restaurants.contains_key(&location.slug) {
             let restaurants = self
                 .restaurants_all()
                 .await?
                 .iter()
-                .filter(|&r| r.location == location)
+                .filter(|&r| r.location.slug == location.slug)
                 .map(|r| r.clone())
                 .collect();
             self.location_restaurants
-                .insert(location.clone(), restaurants);
+                .insert(location.slug.clone(), restaurants);
         }
 
         self.location_restaurants
-            .get(&location)
+            .get(&location.slug)
             .cloned()
             .ok_or(Error::Misc("cache error"))
     }
