@@ -973,6 +973,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "maceats"
+version = "0.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e92b4bd35765659d122b9d1c0015c44d46e35ba41bfa38168b4c70969167d6ee"
+dependencies = [
+ "chrono",
+ "futures",
+ "heck",
+ "log",
+ "once_cell",
+ "regex",
+ "reqwest",
+ "scraper",
+ "selectors",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "maceats-server"
 version = "0.0.0"
 dependencies = [
@@ -980,7 +1002,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "log",
- "maceats",
+ "maceats 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "once_cell",
  "pretty_env_logger",
  "serde",
