@@ -1,6 +1,6 @@
 export type Location = {
   name: string;
-  url: string;
+  slug: string;
 };
 
 export type Restaurant = {
@@ -43,3 +43,10 @@ export type Response<T> = {
   data?: T;
   error?: string;
 };
+
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+export async function get<T>(path: string): Promise<Response<T>> {
+  return fetch(`${API_URL}${path}`).then((res) => res.json());
+}

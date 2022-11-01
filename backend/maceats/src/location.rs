@@ -1,6 +1,7 @@
 use std::{
     borrow::ToOwned,
     fmt::{self, Display, Formatter},
+    path::Path,
     str::FromStr,
 };
 
@@ -19,7 +20,7 @@ pub struct Location {
     pub name: String,
 
     /// The URL of the location.
-    pub url: Url,
+    pub slug: String,
 }
 
 impl Location {
@@ -28,20 +29,23 @@ impl Location {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_owned(),
-            url: "https://maceats.mcmaster.ca/locations/"
-                .parse::<Url>()
-                .and_then(|url| {
-                    url.join(
-                        &name
-                            .split_whitespace()
-                            .filter(|s| !s.eq_ignore_ascii_case("for"))
-                            .collect::<Vec<_>>()
-                            .join(" ")
-                            .to_kebab_case(),
-                    )
-                })
-                .expect("url should be valid"),
+            slug: name
+                .split_whitespace()
+                .filter(|s| !s.eq_ignore_ascii_case("for"))
+                .collect::<Vec<_>>()
+                .join(" ")
+                .to_kebab_case(),
         }
+    }
+
+    /// Get the maceats url of this location.
+    #[must_use]
+    pub fn url(&self) -> Url {
+        "https://maceats.mcmaster.ca/locations/"
+            .parse::<Url>()
+            .expect("static url should be valid")
+            .join(&self.slug)
+            .expect("slug should be valid")
     }
 
     /// Get every location on MacEats.
@@ -90,7 +94,7 @@ impl Location {
     /// This function will return an error if sending the request or parsing the
     /// response fails.
     pub async fn restaurants(&self) -> Result<Vec<Restaurant>> {
-        let response = CLIENT.get(self.url.clone()).send().await?;
+        let response = CLIENT.get(self.url()).send().await?;
         let html = Html::parse_document(&response.text().await?);
 
         Restaurant::from_restaurant_list_html(&html)
@@ -135,13 +139,18 @@ impl TryFrom<ElementRef<'_>> for Location {
             .trim()
             .to_owned();
 
-        let url = "https://maceats.mcmaster.ca".parse::<Url>()?.join(
-            element
+        let slug = Path::new(
+            &element
                 .value()
                 .attr("href")
                 .ok_or_else(|| Error::AttributeNotFound("location"))?,
-        )?;
+        )
+        .file_name()
+        .ok_or_else(|| Error::AttributeNotFound("location"))?
+        .to_str()
+        .ok_or_else(|| Error::AttributeNotFound("location"))?
+        .to_owned();
 
-        Ok(Self { name, url })
+        Ok(Self { name, slug })
     }
 }
