@@ -1,6 +1,6 @@
 # MacEats
 
-We have developed a full-stack reimplementation of the horror of <https://maceats.mcmaster.ca/>. Using Rust on the backend, and the groundbreaking Next.js 13 on the frontend, we have fabricated 3 essential components to solve this issue.
+We have developed a full-stack reimplementation of <https://maceats.mcmaster.ca/>. Using Rust on the backend, and the groundbreaking Next.js 13 on the frontend, we have fabricated 3 essential components to solve this issue.
 
 ## [The Crate](/crate)
 
