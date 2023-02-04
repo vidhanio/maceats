@@ -22,6 +22,6 @@ once_cell = "1.16.0"
 pretty_env_logger = "0.4.0"
 serde = { version = "1.0.145", features = ["derive"] }
 sled = "0.34.7"
-tokio = "1.23.1"
+tokio = "1.24.2"
 tokio-cron-scheduler = "0.8.1"
 warp = "0.3.3"
